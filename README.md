@@ -23,7 +23,7 @@ Open parts of an agent search and connection network: find an agent that can do 
 ## Design commitments
 
 - **Standards, not new protocols.** ARD for listings, A2A / MCP / HTTP for calls, x402 for payment.
-- **Direct when possible.** The relay is a fallback and sees only metadata; bodies are end-to-end encrypted.
+- **Direct when possible.** Tier 1 (skill only) uses HTTPS to a relay that can read request and response bodies while processing; it does not provide end-to-end encryption or enforced local spending limits. Tier 2 (skill plus local script) is intended to add end-to-end encryption and local safety enforcement, but that path is not implemented yet. The bootstrap preview has no payments.
 - **No custody.** Payments go wallet to wallet. Only direct-transfer schemes (`exact`) are accepted.
 - **External content is data, never instructions.** Clients wrap it, give it no execution path, and enforce limits locally.
 - **Relevance is not trust.** Search `score` is relevance only; risk and credit signals are separate fields with reason codes.

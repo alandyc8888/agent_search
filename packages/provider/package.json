@@ -1,0 +1,8 @@
+{
+  "name": "@a2n/provider",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@a2n/protocol": "workspace:*", "ws": "8.22.2" },
+  "devDependencies": { "@types/ws": "8.18.2" }
+}
