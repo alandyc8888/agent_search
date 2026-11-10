@@ -1,0 +1,141 @@
+{
+  "$comment": "Public list of trust seeds for the credit graph. Seeds are starting points for the payer-trust walk only; they get no ranking boost. Revoke by setting revokedAt; every add, revoke or suspension is written to the transparency log. payTo is listed for every chain a seed uses. Only Base mainnet USDC is on the client payment allowlist; addresses on other chains are recorded so payTo checks do not misfire, but they are not payable. A live 402 whose payTo is not listed here suspends the seed until re-reviewed. Solana addresses are case-sensitive base58.",
+  "version": 2,
+  "seeds": [
+    {
+      "id": "exa",
+      "name": "Exa",
+      "ownerKey": "exa.ai",
+      "scope": {
+        "include": [
+          "https://api.exa.ai/"
+        ],
+        "exclude": []
+      },
+      "payTo": {
+        "eip155:8453": [
+          "0x6d6e695b09861467c7d462f5aaf31cf3540b9192",
+          "0xb98ef29eb2be19ae646a8fc0248255b90a332dbc"
+        ],
+        "eip155:480": [
+          "0xb98ef29eb2be19ae646a8fc0248255b90a332dbc"
+        ],
+        "eip155:5042": [
+          "0xb98ef29eb2be19ae646a8fc0248255b90a332dbc"
+        ],
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp": [
+          "12Ec2cJmfR1C9uwejzxcuMhUgEC7wDrLgm1wBvvR5w9E"
+        ]
+      },
+      "approvedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "revokedAt": null,
+      "payableNetworks": [
+        "eip155:8453"
+      ]
+    },
+    {
+      "id": "apify",
+      "name": "Apify (own endpoints only)",
+      "ownerKey": "apify.com",
+      "scope": {
+        "include": [
+          "https://agi.apify.com/",
+          "https://mcp.apify.com/",
+          "https://api.apify.com/v2/store"
+        ],
+        "exclude": [
+          "https://api.apify.com/v2/acts/",
+          "https://api.apify.com/v2/actors/"
+        ],
+        "$comment": "Store Actors written by third parties are not part of the seed. Apify's x402 actor-run endpoints pay Apify's payTo but execute third-party Actors, so they are excluded."
+      },
+      "payTo": {
+        "eip155:8453": [
+          "0x4aabe17c239ef71c3a26ba7c2b3e0aebbfc1df26"
+        ],
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp": [
+          "ECUPkq6DP8VUSEueL4qNznyNDJLwu6PQhnMQ5cuZsTLH"
+        ]
+      },
+      "approvedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "revokedAt": null,
+      "payableNetworks": [
+        "eip155:8453"
+      ]
+    },
+    {
+      "id": "massive",
+      "name": "Massive",
+      "ownerKey": "massive.com",
+      "scope": {
+        "include": [
+          "https://agent.massive.com/"
+        ],
+        "exclude": []
+      },
+      "payTo": {
+        "eip155:8453": [
+          "0x525f6ddce9af7a7179d7696aabfcd5fcd15a21e6"
+        ]
+      },
+      "approvedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "revokedAt": null,
+      "payableNetworks": [
+        "eip155:8453"
+      ]
+    },
+    {
+      "id": "newstex",
+      "name": "Newstex",
+      "ownerKey": "newstex.com",
+      "scope": {
+        "include": [
+          "https://mcp.newstex.com/"
+        ],
+        "exclude": []
+      },
+      "payTo": {
+        "eip155:8453": [
+          "0x01b41c2ec1579b562bab44ec5cb4c48f3f810a53"
+        ]
+      },
+      "approvedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "revokedAt": null,
+      "payableNetworks": [
+        "eip155:8453"
+      ]
+    },
+    {
+      "id": "coingecko",
+      "name": "CoinGecko",
+      "ownerKey": "coingecko.com",
+      "scope": {
+        "include": [
+          "https://pro-api.coingecko.com/"
+        ],
+        "exclude": []
+      },
+      "payTo": {
+        "eip155:8453": [
+          "0x110cdbba7fe6434ec4ce3464cc523942ad6fb784"
+        ],
+        "eip155:137": [
+          "0x110cdbba7fe6434ec4ce3464cc523942ad6fb784"
+        ],
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp": [
+          "8XhngTRitTcUJMiaDJ6azw8GRSiFPpwhnmV3HYQLHUpL"
+        ]
+      },
+      "approvedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "revokedAt": null,
+      "payableNetworks": [
+        "eip155:8453"
+      ]
+    }
+  ]
+}

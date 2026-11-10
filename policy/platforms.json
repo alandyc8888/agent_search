@@ -1,0 +1,45 @@
+{
+  "$comment": "Platforms indexed as a single entry each, never as trust seeds: their merchants are not individually reviewed. Product-level indexing is not enabled. Clients must enforce allowedTools as an allowlist (any unlisted tool, including ones added later, is denied) and hand checkout to the owner via continue_url.",
+  "version": 2,
+  "platforms": [
+    {
+      "id": "shopify-shop",
+      "name": "Shop (Shopify) MCP",
+      "ownerKey": "shop.com",
+      "endpoint": "https://mcp.shop.com/",
+      "protocol": "mcp",
+      "commerceProtocol": "UCP",
+      "seedEligible": false,
+      "indexProducts": false,
+      "receipts": "none",
+      "creditCounted": false,
+      "handoff": {
+        "field": "continue_url",
+        "to": "owner",
+        "noticeCode": "payment_confirmed_by_platform_outside_plugin_limits"
+      },
+      "untrustedFields": [
+        "merchant product text",
+        "next[] recommendations",
+        "ask_business replies"
+      ],
+      "addedAt": "2026-11-09",
+      "approvedBy": "project owner",
+      "allowedTools": [
+        "search_catalog",
+        "lookup_catalog",
+        "get_product",
+        "create_cart",
+        "create_checkout",
+        "get_checkout",
+        "search_orders",
+        "get_account"
+      ],
+      "toolPolicy": "allowlist: any tool not listed is denied, including tools the platform adds later.",
+      "explicitlyDenied": {
+        "complete_checkout": "Shop Pay pays with saved cards after sign-in, bypassing plugin spending limits",
+        "create_spend_request|get_spend_request|update_spend_request|complete_spend_request": "can release card credentials to the agent; highest-severity risk if the agent is injected"
+      }
+    }
+  ]
+}

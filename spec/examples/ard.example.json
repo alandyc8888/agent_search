@@ -1,0 +1,275 @@
+{
+  "_comment": "Example with fictitious providers. The a2n prefix and net.example are placeholders until the network name is decided. Format: ../listing-format.md",
+  "@context": [
+    "https://agenticresourcediscovery.org/context/v1",
+    {
+      "a2n": "https://net.example/ns/v0#"
+    }
+  ],
+  "entries": [
+    {
+      "identifier": "urn:air:net.example:u:bob:local-llm",
+      "displayName": "Bob's home GPU inference",
+      "type": "application/agent-card+json",
+      "data": {
+        "name": "Bob's home GPU inference",
+        "description": "Open-weight LLM inference on a home RTX 4090. OpenAI-compatible."
+      },
+      "description": "Qwen3 32B (AWQ 4-bit) on a home RTX 4090 via vLLM. OpenAI-compatible chat completions and embeddings. Pay per call in USDC on Base.",
+      "representativeQueries": [
+        "cheap open-weight LLM chat paid per call in USDC",
+        "OpenAI-compatible endpoint without an API key",
+        "translate a short document with an open model"
+      ],
+      "capabilities": [
+        "ChatCompletion",
+        "Embeddings"
+      ],
+      "a2n:specVersion": "0.1",
+      "a2n:interaction": [
+        "endpoint",
+        "inbox"
+      ],
+      "a2n:address": [
+        {
+          "kind": "relay",
+          "protocol": "openai"
+        }
+      ],
+      "a2n:offerings": [
+        {
+          "id": "chat",
+          "title": "Chat completion",
+          "summary": "Qwen3 32B chat, up to 2k output tokens per call",
+          "category": "inference.llm",
+          "endpoint": "/v1/chat/completions",
+          "price": {
+            "mode": "fixed",
+            "amount": "0.01",
+            "currency": "USD",
+            "unit": "call"
+          },
+          "accepts": [
+            "base-usdc"
+          ],
+          "deliveryWithin": 120,
+          "limits": {
+            "maxOutputTokens": 2048
+          },
+          "updatedAt": "2026-11-09T00:00:00Z"
+        },
+        {
+          "id": "long-chat",
+          "title": "Long-context chat",
+          "summary": "Billed by actual tokens, capped",
+          "category": "inference.llm",
+          "endpoint": "/v1/chat/completions?tier=long",
+          "price": {
+            "mode": "upto",
+            "amount": "0.002",
+            "max": "0.05",
+            "currency": "USD",
+            "unit": "1k_tokens"
+          },
+          "accepts": [
+            "base-usdc"
+          ],
+          "deliveryWithin": 300,
+          "updatedAt": "2026-11-09T00:00:00Z"
+        }
+      ],
+      "a2n:paymentMethods": [
+        {
+          "id": "base-usdc",
+          "kind": "x402",
+          "version": 2,
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "payTo": "0x0000000000000000000000000000000000000b0b",
+          "maxTimeoutSeconds": 120
+        }
+      ],
+      "a2n:probe": {
+        "url": "/v1/probe",
+        "limits": {
+          "maxOutputTokens": 64,
+          "perDay": 20
+        }
+      },
+      "a2n:declarations": {
+        "operator": {
+          "name": "Bob",
+          "country": "DE"
+        },
+        "upstream": {
+          "kind": "own-hardware",
+          "hardware": "RTX 4090",
+          "runtime": "vLLM"
+        },
+        "models": [
+          {
+            "id": "Qwen/Qwen3-32B-AWQ",
+            "weights": "open",
+            "quantization": "AWQ-4bit",
+            "contextLength": 32768,
+            "modified": false
+          }
+        ],
+        "dataPolicy": {
+          "retention": "none"
+        }
+      },
+      "trustManifest": {
+        "identity": "did:web:net.example:u:bob",
+        "trustSchema": {
+          "id": "a2n-listing-jws/v1",
+          "governanceUri": "https://net.example/spec/listing-signature",
+          "verificationMethods": [
+            "did:web"
+          ]
+        },
+        "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDp3ZWI6bmV0LmV4YW1wbGU6dTpib2IjbGlzdGluZyJ9..<detached-signature>"
+      }
+    },
+    {
+      "identifier": "urn:air:pdftools.example:doc:ocr",
+      "displayName": "PDF Tools (OCR & compress)",
+      "type": "application/agent-card+json",
+      "url": "https://pdftools.example/.well-known/agent-card.json",
+      "description": "OCR scanned PDFs to searchable PDF or text, and compress PDFs. HTTP API, file upload, pay per file in USDC on Base.",
+      "representativeQueries": [
+        "OCR this scanned PDF into text",
+        "make this PDF smaller for email",
+        "extract text from an image-only PDF in German"
+      ],
+      "capabilities": [
+        "PdfOcr",
+        "PdfCompress"
+      ],
+      "a2n:specVersion": "0.1",
+      "a2n:interaction": [
+        "endpoint",
+        "inbox"
+      ],
+      "a2n:address": [
+        {
+          "kind": "direct",
+          "url": "https://api.pdftools.example",
+          "protocol": "http"
+        }
+      ],
+      "a2n:offerings": [
+        {
+          "id": "ocr",
+          "title": "PDF OCR",
+          "summary": "Scanned PDF to text or searchable PDF, up to 50 pages",
+          "category": "doc.ocr",
+          "endpoint": "/v1/ocr",
+          "price": {
+            "mode": "variable",
+            "amount": "0.01",
+            "max": "0.50",
+            "currency": "USD",
+            "unit": "job"
+          },
+          "accepts": [
+            "base-usdc"
+          ],
+          "deliveryWithin": 300,
+          "limits": {
+            "maxFileMB": 50,
+            "maxPages": 50
+          },
+          "updatedAt": "2026-11-09T00:00:00Z",
+          "input": "both",
+          "billing": "per_file",
+          "chargeOnFailure": false
+        },
+        {
+          "id": "compress",
+          "title": "PDF compress",
+          "summary": "Lossy or lossless PDF compression",
+          "category": "file.compress",
+          "endpoint": "/v1/compress",
+          "price": {
+            "mode": "fixed",
+            "amount": "0.005",
+            "currency": "USD",
+            "unit": "job"
+          },
+          "accepts": [
+            "base-usdc"
+          ],
+          "deliveryWithin": 60,
+          "limits": {
+            "maxFileMB": 50
+          },
+          "updatedAt": "2026-11-09T00:00:00Z",
+          "input": "both",
+          "billing": "per_file",
+          "chargeOnFailure": false
+        },
+        {
+          "id": "bulk",
+          "title": "Bulk OCR quote",
+          "summary": "Send a description of a large batch; we reply with a signed quote",
+          "category": "doc.ocr",
+          "price": {
+            "mode": "variable",
+            "amount": "5",
+            "max": "200",
+            "currency": "USD",
+            "unit": "job"
+          },
+          "accepts": [
+            "base-usdc"
+          ],
+          "deliveryWithin": 86400,
+          "updatedAt": "2026-11-09T00:00:00Z",
+          "input": "url",
+          "billing": "per_file",
+          "chargeOnFailure": false
+        }
+      ],
+      "a2n:paymentMethods": [
+        {
+          "id": "base-usdc",
+          "kind": "x402",
+          "version": 2,
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "payTo": "0x000000000000000000000000000000000000Df01",
+          "maxTimeoutSeconds": 300
+        }
+      ],
+      "a2n:declarations": {
+        "operator": {
+          "name": "Example Tools (sole trader)",
+          "country": "DE"
+        },
+        "dataPolicy": {
+          "retention": "deleted within 1 hour",
+          "training": false,
+          "region": "EU",
+          "url": "https://pdftools.example/privacy"
+        }
+      },
+      "a2n:sameOwnerAs": [
+        "urn:air:imgtools.example:media:resize"
+      ],
+      "trustManifest": {
+        "identity": "did:web:pdftools.example",
+        "trustSchema": {
+          "id": "a2n-listing-jws/v1",
+          "governanceUri": "https://net.example/spec/listing-signature",
+          "verificationMethods": [
+            "did:web"
+          ]
+        },
+        "signature": "<detached-jws>"
+      }
+    }
+  ]
+}

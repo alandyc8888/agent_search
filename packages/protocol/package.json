@@ -1,0 +1,16 @@
+{
+  "name": "@a2n/protocol",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Listing format, signatures, sealed boxes, x402 parsing, asset allowlist and transparency-log verification shared by the plugin and the index.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "canonicalize": "5.1.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0"
+  }
+}
