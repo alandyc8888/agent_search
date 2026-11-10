@@ -1,8 +1,50 @@
 # agent_search
 
-Open components for finding automatic agent services and connecting to their providers. Direct, non-custodial payment is a later goal, not a feature of this communication preview.
+Find agent-run services for a task, then connect to their providers.
+This project searches for services—not web pages.
 
-**Status: local synthetic-data preview, not a production release.** There is no public index, relay endpoint, or released package. The `a2n` namespace and `net.example` domain are placeholders.
+**Local communication preview · synthetic data only · no payments.**
+There is no public index, relay endpoint, or released package yet. This
+repository contains a consumer skill, a provider connector, protocol helpers,
+and specifications—not a complete hosted network.
+
+## What works in the local preview
+
+With an operator-provided index/relay and a preconfigured demo provider:
+
+1. Search the demo index for a service such as ZIP packing.
+2. Send a synthetic request through the relay and save the result without
+   opening or executing it.
+3. Leave a text inquiry while the provider is offline, retrieve its fixed
+   acknowledgement after it reconnects, then delete the stored request/result.
+
+An offline inquiry is not a queued file-processing job. The ZIP demo packs
+files into an archive; its pack operation does not compress them to save space.
+
+**Important limits:** the skill-only path is not end-to-end encrypted—the relay
+can read request and response bodies. Use synthetic data only. Payments,
+receipt-based reviews, the credit graph, and the local consumer-script tier are
+not implemented in this preview. Search quality and production readiness have
+not been established. Signatures and policy configuration are not endorsements;
+model instructions are not a sandbox or guaranteed prompt-injection prevention.
+
+## Start here
+
+- **Use an agent as a consumer:** read
+  [`SKILL.md`](skills/agent-search/SKILL.md). It uses the agent's existing HTTP
+  tools; no consumer daemon or wallet. You still need an origin supplied by a
+  relay operator. Installing the skill does not create a working public service.
+- **Connect an existing HTTP service:** read the
+  [provider connector guide](packages/provider/README.md). You need Node 24+,
+  a fixed loopback upstream, an operator-supplied relay, and a handle/public keys
+  provisioned by that operator. Self-service registration is not implemented.
+- **Run a standalone local example:** see the [ZIP provider](examples/zip-provider/README.md) or [gzip provider](examples/gzip-provider/README.md). They use Python 3.12 on Linux and only the standard library. Their tests need no relay; neither is an end-to-end network setup or production sandbox. Gzip output can be larger than its input.
+- **Work on the libraries and formats:** see [What is here](#what-is-here) and
+  [Develop](#develop).
+
+The `a2n` namespace and `net.example` domain are placeholders, not live service
+addresses. Direct non-custodial payment is a later design goal, not a feature of
+this preview.
 
 ## What is here
 
@@ -13,6 +55,7 @@ Open components for finding automatic agent services and connecting to their pro
 | [`packages/protocol`](packages/protocol) | ARD listing helpers, experimental detached-signature and sealed-box helpers, x402 response parsing, pinned asset decimals, and reason-code rendering. These helpers are not a payment authorizer or a complete client security boundary |
 | [`spec/listing-format.md`](spec/listing-format.md) | Proposed provider listing format: an [ARD](https://github.com/ards-project/ard-spec) entry plus `a2n:` terms. Some fields describe future features |
 | [`spec/examples`](spec/examples) | Fictitious listing examples, not proof that every illustrated feature is implemented |
+| [`examples/zip-provider`](examples/zip-provider) / [`examples/gzip-provider`](examples/gzip-provider) | Standalone synthetic loopback services and tests; not an end-to-end network or production sandbox |
 | [`policy/seeds.json`](policy/seeds.json) | Public, revocable seed configuration for a future credit graph. This package does not implement a transparency-log client or enforce logging of seed changes |
 | [`policy/platforms.json`](policy/platforms.json) | Public platform-policy configuration. A client must separately implement enforcement; publishing the configuration does not enforce it |
 
@@ -36,6 +79,8 @@ The current sealed-box helper is an experimental X25519/HKDF/AES-GCM constructio
 - Do not sell ranking. Detection rules, anti-fraud parameters, server operations, and named third-party review records are outside this repository.
 
 ## Develop
+
+These commands check the components; they do not start a hosted service or full network.
 
 Node 24+, pnpm:
 

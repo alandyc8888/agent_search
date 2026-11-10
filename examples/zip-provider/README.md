@@ -1,28 +1,85 @@
 # Loopback ZIP example provider
 
-A small Python HTTP service for synthetic local demonstrations. **Not a production sandbox.** No payment, wallet, external API, package installation, or remote URL fetching. This example contains only the local service; a provider connector, relay and consumer skill are separate components. End-to-end integration is not established by these unit tests.
+A standalone Python HTTP service for learning and synthetic local tests. It can
+pack files into a ZIP, inspect archive metadata, or return selected file bytes.
+Packing uses STORE only: it does not compress files to make them smaller.
+Inspection does not decompress entries or verify their CRCs.
 
-## Requirements and quick start
+**This is the local application, not the network connector.** To use a relay you
+would also run the separate Node 24+
+[provider connector](../../packages/provider/README.md) and obtain provisioning
+from a relay operator. Running this example does not register a provider or make
+it searchable. A consumer skill is a separate component too.
+
+## What runs locally—and what does not open publicly
+
+- This example requires Python 3.12 on Linux and uses the standard library. An
+  existing HTTP service does not need Python merely to use the Node connector.
+- The server binds only to `127.0.0.1`, on port `8791` by default. Changing
+  `ZIP_DEMO_PORT` changes the port, not the bind address.
+- Keep it on loopback. Do not add a public listener, tunnel, or port-forward, and
+  do not expose it to untrusted public uploads. In a future configured relay
+  setup, allowed routes would be reachable through the outbound connector;
+  loopback binding does not itself authorize remote tasks or isolate the host.
+- There is no payment, wallet, billing, external API or remote-URL fetching here.
+  These local tests do not establish end-to-end integration or production safety.
+
+## Start with the self-contained tests
+
+From this directory, run:
+
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v test_server.py
+
+The tests start their own loopback server on an ephemeral port, generate their
+own temporary token and synthetic archives, and shut down that server. You do
+not need a relay, a connector, a registered identity, or a manually started server
+for these tests. This does not prove the whole network works.
+
+For a manual standalone demonstration, continue below. The server and any local
+caller must use the same local HTTP token; do not print it, commit it, paste it
+into a chat, or send it to a relay operator. A new terminal does not automatically
+inherit a token exported in another terminal.
+
+**Not a production sandbox.** Worker limits are not OS isolation. Retain the
+limits and deployment warnings below; do not automatically open returned files.
+The relay-readable caller path is not end-to-end encrypted.
+
+## Manual standalone start
 
 Use **Python 3.12 on Linux**, with the standard library. Worker limits use Unix `resource` facilities; other platforms are not supported by this example.
 
 From this directory:
 
 ```bash
-# Generate a temporary local capability. Do not print it or commit it.
-export ZIP_DEMO_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+# Private directory outside the repository; never print or commit the capability.
+umask 077
+export ZIP_DEMO_TOKEN_FILE="$(python3 -c 'import os; print(os.path.join(os.path.expanduser("~"), ".agent-search-example", "zip-token"))')"
+unset ZIP_DEMO_TOKEN
+python3 - <<'PY'
+import os
+import secrets
+from pathlib import Path
+path = Path(os.environ['ZIP_DEMO_TOKEN_FILE'])
+path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+if path.parent.is_symlink() or path.parent.stat().st_uid != os.getuid() or path.parent.stat().st_mode & 0o077:
+    raise SystemExit('use an owner-only private directory')
+# Exclusive create: never silently overwrite/rotate an existing token file.
+fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+with os.fdopen(fd, 'w', encoding='ascii') as stream:
+    stream.write(secrets.token_urlsafe(32) + '\n')
+PY
 python3 server.py
 ```
 
-The server binds only to `127.0.0.1`, using port `8791` by default. `ZIP_DEMO_PORT` can change the port, not the bind address. Stop it with Ctrl-C. To make a request, use a separate terminal or process with the **same securely shared environment variable**; do not generate a different token there.
+The server binds only to `127.0.0.1`, using port `8791` by default. `ZIP_DEMO_PORT` can change the port, not the bind address. Stop it with Ctrl-C. To make a request, use a separate terminal or process with the **same securely shared token file path or environment source**; do not generate a different token there.
 
-Run all tests without manually starting a server:
+### Share the same local capability with the connector
 
-```bash
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v test_server.py
-```
+Set the connector's `upstreamTokenFile` to the **same absolute file path** as `ZIP_DEMO_TOKEN_FILE`. Only the path belongs in the private connector configuration; do not put token contents in cards, relay requests, URLs, logs, command arguments or Git. The file must be readable by both processes under the same user in this local preview. Do not relax permissions to share it across different users; use a separately reviewed deployment identity/mount arrangement instead.
 
-Tests generate all ZIP archives in memory, generate a temporary authentication token at runtime, use an ephemeral loopback port and shut down their own server. There are no committed ZIP files or other binary fixtures.
+The server opens the file once at startup and requires a single-link ordinary file owned by its user with mode exactly `0600`, no final symlink, and at most 257 bytes (32–256 URL-safe ASCII token characters plus one optional final LF). Spaces, CRLF, extra lines and non-ASCII are rejected. Keep every parent directory private and free of symlinked/untrusted components: final-component `O_NOFOLLOW` is **not** a full path-traversal or same-user-attacker defense. Token entropy is the operator's responsibility.
+
+The old environment-only source still works: unset `ZIP_DEMO_TOKEN_FILE` and generate `ZIP_DEMO_TOKEN` with `secrets.token_urlsafe(32)`. **Exactly one source must be present**; both set (even if one is empty), neither set, a missing/invalid file or invalid content rejects startup, with no fallback. Both sources now require URL-safe ASCII characters and a 32–256 character length; old arbitrary long/space/Unicode tokens are not supported. There is no automatic hot reload. Coordinate rotation and restart the service/connector together; editing the shared file alone can make them disagree. Environment mode remains a separate option, not a reason to copy secrets through shell history.
 
 ## HTTP interface
 
@@ -48,9 +105,16 @@ import hashlib
 import json
 import os
 import urllib.request
+from server import load_token
 
 port = int(os.environ.get('ZIP_DEMO_PORT', '8791'))
 origin = f'http://127.0.0.1:{port}'
+
+class RejectRedirects(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+http = urllib.request.build_opener(urllib.request.ProxyHandler({}), RejectRedirects())
 
 def call(path, payload):
     request = urllib.request.Request(
@@ -58,12 +122,14 @@ def call(path, payload):
         data=json.dumps(payload).encode(),
         headers={
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + os.environ['ZIP_DEMO_TOKEN'],
+            'Authorization': 'Bearer ' + load_token(),
         },
         method='POST',
     )
-    with urllib.request.urlopen(request, timeout=15) as response:
-        envelope = json.load(response)
+    with http.open(request, timeout=15) as response:
+        encoded = response.read(1048577)
+    assert len(encoded) <= 1048576
+    envelope = json.loads(encoded)
     assert envelope['ok'] and envelope['demo_only']
     assert envelope['billing'] == 'disabled'
     return envelope['result']
@@ -86,6 +152,8 @@ assert result['preview_allowed'] is False
 print('roundtrip OK; archive sha256:', packed['sha256'])
 PY
 ```
+
+See the [provider connector guide](../../packages/provider/README.md) for configuration and current provisioning limits. This example does not register itself with a relay. The [consumer skill](../../skills/agent-search/SKILL.md) describes the separate skill-only path.
 
 ## Connector contract
 

@@ -1,7 +1,7 @@
 # Provider listing format v0.1 (ARD entry + `a2n:` extension)
 
 Status: draft. The `a2n:` prefix and the `net.example` domain are placeholders until the network name is decided.
-Example: [examples/ard.example.json](examples/ard.example.json).
+Example: [examples/ard.example.json](examples/ard.example.json). The example is a design illustration, not the current preview's limits: the local preview accepts at most a 1 MiB JSON request body and 512 KiB binary input; its ZIP pack accepts at most 20 files. An illustrative `maxFileMB: 50` does not raise those caps or enable large-file transport.
 
 A listing is a standard [ARD](https://github.com/ards-project/ard-spec) entry plus terms in our own JSON-LD namespace. ARD lets an entry carry extra namespaces: registries that don't understand them keep them as-is, and registries that do can filter on them. Publish once, readable everywhere. We do not invent a protocol.
 
@@ -103,7 +103,7 @@ Offerings that handle user files or data (`doc.*`, `file.*`, editing/transcripti
 Only existing standards are combined.
 
 - **Identity:** `did:web`. With a domain: `did:web:<domain>`, DID document at `https://<domain>/.well-known/did.json`. Hosted handle: `did:web:net.example:u:<handle>`. A hosted handle proves "same key", not trustworthiness.
-- **Keys in the DID document:** `#listing` (Ed25519, signs the listing), `#receipt` (signs receipts, separate from `payTo`), `#e2e` (X25519, relay end-to-end encryption).
+- **Keys in the DID document:** `#listing` (Ed25519, signs the listing), `#receipt` (signs receipts, separate from `payTo`), `#e2e` (X25519, reserved for a future end-to-end encrypted relay path; the current skill-only preview is not end-to-end encrypted).
 - **Signing:**
   1. Remove `trustManifest.signature`, canonicalise the entry with RFC 8785 (JCS).
   2. Sign with the `#listing` key as a detached JWS, `alg: EdDSA`, `kid` = DID URL.

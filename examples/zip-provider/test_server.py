@@ -1,3 +1,9 @@
+import http.client
+import os
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 import base64
 import io
 import json
@@ -11,7 +17,7 @@ import unittest
 import urllib.error
 import urllib.request
 import zipfile
-from server import execute, Invalid, MAX_ENTRIES, MAX_INPUT, make_server, run_task
+from server import load_token, execute, Invalid, MAX_ENTRIES, MAX_INPUT, make_server, run_task
 
 
 def enc(data):
@@ -228,6 +234,115 @@ class HttpTests(unittest.TestCase):
         code, result = self.request('/zip/extract', {'archive_base64': data['result']['archive_base64'], 'entry_ids': [0]})
         self.assertEqual(code, 200)
         self.assertEqual(base64.b64decode(result['result']['files'][0]['data_base64']), b'hello')
+
+
+class TokenFileTests(unittest.TestCase):
+    prefix = 'ZIP_DEMO'
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.path = Path(self.directory.name) / 'capability'
+        self.token = secrets.token_urlsafe(32)
+        self.path.write_bytes(self.token.encode())
+        self.path.chmod(0o600)
+
+    def tearDown(self):
+        self.directory.cleanup()
+
+    def env(self):
+        return {self.prefix + '_TOKEN_FILE': str(self.path)}
+
+    def test_file_with_and_without_lf(self):
+        self.assertEqual(load_token(self.env()), self.token)
+        self.path.write_bytes((self.token + '\n').encode())
+        self.assertEqual(load_token(self.env()), self.token)
+
+    def test_environment_source_and_conflict(self):
+        self.assertEqual(load_token({self.prefix + '_TOKEN': self.token}), self.token)
+        for env in ({}, {self.prefix + '_TOKEN': ''}, {self.prefix + '_TOKEN_FILE': ''},
+                    dict(self.env(), **{self.prefix + '_TOKEN': self.token}),
+                    dict(self.env(), **{self.prefix + '_TOKEN': ''})):
+            with self.subTest(keys=list(env)), self.assertRaises(ValueError):
+                load_token(env)
+
+    def test_permissions(self):
+        for mode in (0o644, 0o640, 0o400, 0o700, 0o660):
+            self.path.chmod(mode)
+            with self.subTest(mode=oct(mode)), self.assertRaises(ValueError):
+                load_token(self.env())
+        self.path.chmod(0o600)
+
+    def test_symlink_directory_fifo_and_missing(self):
+        directory = Path(self.directory.name)
+        link = directory / 'link'
+        link.symlink_to(self.path)
+        fifo = directory / 'fifo'
+        os.mkfifo(fifo, 0o600)
+        for path in (link, directory, fifo, directory / 'absent'):
+            with self.subTest(kind=path.name), self.assertRaises(ValueError):
+                load_token({self.prefix + '_TOKEN_FILE': str(path)})
+
+    def test_hardlink(self):
+        second = Path(self.directory.name) / 'second'
+        os.link(self.path, second)
+        with self.assertRaises(ValueError):
+            load_token(self.env())
+
+    def test_wrong_owner(self):
+        actual = os.fstat
+        def changed(fd):
+            st = actual(fd)
+            return SimpleNamespace(**{field: (st.st_uid + 1 if field == 'st_uid' else getattr(st, field))
+                for field in ('st_mode', 'st_uid', 'st_nlink', 'st_size')})
+        with mock.patch('server.os.fstat', side_effect=changed), self.assertRaises(ValueError):
+            load_token(self.env())
+
+    def test_content_and_size_limits(self):
+        for raw in (b'', b'x' * 31, b'x' * 258, b'x' * 32 + b'\r\n', b'x' * 32 + b'\n\n',
+                    b'x' * 32 + b' ', b'x' * 32 + b'\x00', b'x' * 32 + b'\xff'):
+            self.path.write_bytes(raw)
+            with self.subTest(size=len(raw)), self.assertRaises(ValueError):
+                load_token(self.env())
+        self.path.write_bytes(b'x' * 256 + b'\n')
+        self.assertEqual(len(load_token(self.env())), 256)
+
+    def test_file_changed_during_read(self):
+        actual = os.read
+        def changed(fd, length):
+            raw = actual(fd, length)
+            self.path.write_bytes((self.token + 'x').encode())
+            return raw
+        with mock.patch('server.os.read', side_effect=changed), self.assertRaises(ValueError):
+            load_token(self.env())
+
+    def test_error_does_not_include_path_or_contents(self):
+        private_name = str(Path(self.directory.name) / 'PRIVATE-LOCATION')
+        try:
+            load_token({self.prefix + '_TOKEN_FILE': private_name})
+        except ValueError as error:
+            self.assertEqual(str(error), 'invalid_token_file')
+            self.assertNotIn(private_name, str(error))
+            self.assertNotIn(self.token, str(error))
+        else:
+            self.fail('expected rejection')
+
+    def test_file_token_authenticates_http(self):
+        server = make_server(0, load_token(self.env()))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=15)
+        try:
+            connection.request('POST', '/zip/pack', body=json.dumps({'files': [{'name': 'synthetic.txt', 'data_base64': enc(b'hello') }]}),
+                               headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.token})
+            response = connection.getresponse()
+            result = json.loads(response.read())
+            self.assertEqual(response.status, 200)
+            self.assertTrue(result['ok'])
+        finally:
+            connection.close()
+            server.shutdown()
+            thread.join()
+            server.server_close()
 
 
 if __name__ == '__main__':

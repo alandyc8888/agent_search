@@ -397,13 +397,54 @@ class Handler(BaseHTTPRequestHandler):
             self.send(400, b'{"ok":false,"error":"invalid_request"}')
 
 
+def validate_token(token):
+    # Match generated URL-safe capabilities and keep Authorization ASCII-only.
+    if not isinstance(token, str) or not 32 <= len(token) <= 256 or any(c not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-' for c in token):
+        raise ValueError('invalid_local_token')
+    return token
+
+
+def load_token(environ=None):
+    env = os.environ if environ is None else environ
+    direct_name, file_name = 'ZIP_DEMO_TOKEN', 'ZIP_DEMO_TOKEN_FILE'
+    # Presence, not truthiness: even an empty second source is ambiguous.
+    if (direct_name in env) == (file_name in env):
+        raise ValueError('configure_exactly_one_token_source')
+    if direct_name in env:
+        return validate_token(env[direct_name])
+    descriptor = None
+    try:
+        # Open once; no separate pathname stat/read race. NONBLOCK avoids hanging on FIFOs.
+        descriptor = os.open(env[file_name], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or stat.S_IMODE(before.st_mode) != 0o600 or before.st_uid != os.getuid() or before.st_nlink != 1 or not 32 <= before.st_size <= 257:
+            raise ValueError('invalid_token_file')
+        raw = os.read(descriptor, 258)
+        after = os.fstat(descriptor)
+        fields = ('st_dev', 'st_ino', 'st_mode', 'st_uid', 'st_nlink', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+        if len(raw) != before.st_size or any(getattr(before, field) != getattr(after, field) for field in fields):
+            raise ValueError('token_file_changed')
+        # One optional final LF is permitted; do not strip arbitrary whitespace.
+        if raw.endswith(b'\n'):
+            raw = raw[:-1]
+        return validate_token(raw.decode('ascii'))
+    except (OSError, UnicodeError, ValueError, TypeError):
+        raise ValueError('invalid_token_file') from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def make_server(port=8791, token=None):
-    if not token or len(token) < 32:
-        raise ValueError('set ZIP_DEMO_TOKEN to a random token of at least 32 characters')
+    token = validate_token(token)
     server = BoundedHTTPServer(('127.0.0.1', port), Handler)
     server.demo_token = token
     return server
 
 
 if __name__ == '__main__':
-    make_server(int(os.environ.get('ZIP_DEMO_PORT', '8791')), os.environ.get('ZIP_DEMO_TOKEN')).serve_forever()
+    try:
+        local_token = load_token()
+    except ValueError:
+        raise SystemExit('token configuration rejected') from None
+    make_server(int(os.environ.get('ZIP_DEMO_PORT', '8791')), local_token).serve_forever()
