@@ -2,8 +2,8 @@
 //
 // Detection rules (injection patterns, risk classifiers, thresholds) are deliberately NOT in this
 // package. They live in a private package so attackers cannot tune their text against them.
-// The plugin's safety does not depend on those rules: it wraps every external text as untrusted
-// data, gives external content no execution path, and enforces spending/consent policy locally.
+// These helpers clean or label data; they do not sandbox a model, prevent instruction following,
+// enforce consent, or authorize payment. Callers must apply those controls separately.
 
 const TAG_CHARS = /[\u{E0000}-\u{E007F}]/u;
 const ZERO_WIDTH = /[\u200B-\u200F\u2060-\u2064\uFEFF\u180E]/u;
@@ -14,12 +14,12 @@ export interface ScanFinding {
   severity: number;
 }
 
-/** Hidden or direction-control characters: always flagged and stripped before text reaches a model. */
-export function hiddenCharFindings(text: string): ScanFinding[] {
-  const f: ScanFinding[] = [];
-  if (TAG_CHARS.test(text)) f.push({ reasonCode: "hidden_chars:unicode_tag", severity: 0.5 });
-  if (ZERO_WIDTH.test(text)) f.push({ reasonCode: "hidden_chars:zero_width", severity: 0.5 });
-  if (BIDI.test(text)) f.push({ reasonCode: "hidden_chars:bidi_control", severity: 0.5 });
+/** Character metadata only: no risk weights and no implicit stripping. Use stripHidden separately. */
+export function hiddenCharFindings(text: string): Pick<ScanFinding, "reasonCode">[] {
+  const f: Pick<ScanFinding, "reasonCode">[] = [];
+  if (TAG_CHARS.test(text)) f.push({ reasonCode: "hidden_chars:unicode_tag" });
+  if (ZERO_WIDTH.test(text)) f.push({ reasonCode: "hidden_chars:zero_width" });
+  if (BIDI.test(text)) f.push({ reasonCode: "hidden_chars:bidi_control" });
   return f;
 }
 

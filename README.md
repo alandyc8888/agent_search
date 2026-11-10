@@ -24,7 +24,7 @@ The bootstrap relay/index and its internal operations are maintained separately.
 - **Tier 2 — skill plus a local consumer script:** intended to add end-to-end encryption, local data-handling controls, and spending-policy enforcement. **This consumer path is not implemented.**
 - **Providers:** run the preview connector beside a fixed local HTTP service. It enforces its method/path allowlist, strips untrusted request headers, and injects any configured local upstream credential. It does not make an unsafe upstream safe and is not a production isolation sandbox.
 
-The current sealed-box helper is an experimental X25519/HKDF/AES-GCM construction, **not RFC 9180 HPKE**. Having cryptographic helpers in a repository does not establish end-to-end encryption in a deployed path. Known signature-canonicalization and payment-comparison issues remain under review; do not use these helpers to authorize payments or authenticate untrusted production listings.
+The current sealed-box helper is an experimental X25519/HKDF/AES-GCM construction, **not RFC 9180 HPKE**. Having cryptographic helpers in a repository does not establish end-to-end encryption in a deployed path. The current source rejects lone surrogates before signing/hashing, preserves own `__proto__` JSON members, and returns `unknown` rather than `match` for unreferenced payment requirements. `hiddenCharFindings` returns reason codes without severity weights. These are compatibility changes from the initial preview and still require independent review; do not use these helpers to authorize payments or authenticate untrusted production listings.
 
 ## Design goals
 

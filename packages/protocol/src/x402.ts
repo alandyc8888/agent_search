@@ -103,20 +103,22 @@ export interface KnownRequirement {
 }
 
 export interface CompareResult {
-  status: "match" | "mismatch" | "no_requirements";
+  status: "match" | "mismatch" | "unknown" | "no_requirements";
   /** requirements whose (network, asset) matched a known one but payTo differs */
   payToMismatch: PaymentRequirement[];
-  /** requirements whose (network, asset, payTo) is not in the known set at all */
+  /** requirements whose (network, asset) has no reference claim */
   unknown: PaymentRequirement[];
 }
 
 /**
  * Compare live 402 requirements against what a directory (Bazaar / ard.json / signed listing) claims.
- * Rule: a payTo that differs from the directory on the same network+asset is not trusted (autopay off, alert).
+ * A match means EVERY live (network, asset, payTo) has a reference claim; an empty
+ * reference or any unknown network/asset cannot match. Address conflicts take priority.
+ * This compares recipient claims only, not amounts, schemes, approval or payment safety.
  */
 export function compareRequirements(live: PaymentRequirement[], known: KnownRequirement[]): CompareResult {
   if (live.length === 0) return { status: "no_requirements", payToMismatch: [], unknown: [] };
-  const key = (n: string, a: string) => `${n}|${a.toLowerCase()}`;
+  const key = (n: string, a: string) => JSON.stringify([n, normAddr(a)]);
   const knownBy = new Map<string, Set<string>>();
   for (const k of known) {
     const s = knownBy.get(key(k.network, k.asset)) ?? new Set<string>();
@@ -128,7 +130,7 @@ export function compareRequirements(live: PaymentRequirement[], known: KnownRequ
   for (const r of live) {
     const s = knownBy.get(key(r.network, r.asset));
     if (!s) unknown.push(r);
-    else if (!s.has(r.payTo)) payToMismatch.push(r);
+    else if (!s.has(normAddr(r.payTo))) payToMismatch.push(r);
   }
-  return { status: payToMismatch.length ? "mismatch" : "match", payToMismatch, unknown };
+  return { status: payToMismatch.length ? "mismatch" : unknown.length ? "unknown" : "match", payToMismatch, unknown };
 }

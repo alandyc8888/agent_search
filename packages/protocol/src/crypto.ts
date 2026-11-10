@@ -4,20 +4,20 @@ import canonicalize from "canonicalize";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 
-/** Replace lone surrogates anywhere in a JSON value (untrusted data can carry them). */
+/** Lossy cleanup for non-signing ingestion/display only; never use it before signature verification. */
 export function wellFormed<T>(v: T): T {
   if (typeof v === "string") return v.toWellFormed() as T;
   if (Array.isArray(v)) return v.map(wellFormed) as T;
   if (v && typeof v === "object") {
-    const o: Record<string, unknown> = {};
-    for (const [k, x] of Object.entries(v)) o[k.toWellFormed()] = wellFormed(x);
-    return o as T;
+    // Define own data properties, including __proto__, without invoking prototype setters.
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k.toWellFormed(), wellFormed(x)])) as T;
   }
   return v;
 }
 
+/** Canonicalize the original JSON value. RFC 8785 rejects invalid Unicode; do not repair it. */
 export function jcs(value: unknown): string {
-  const s = canonicalize(wellFormed(value));
+  const s = canonicalize(value);
   if (s === undefined) throw new Error("not_canonicalizable");
   return s;
 }
