@@ -126,14 +126,14 @@ Computed by the index; not signed; ignored if a provider writes it.
   "log": { "seq": 1042, "leaf": "sha256:…", "treeHead": "sha256:…" },
   "payToChangedAt": { "<paymentMethodId>": "2026-11-02T00:00:00Z" },
   "categories": ["inference.llm"],
-  "riskTags": [],
-  "risk":   { "score": 18, "reasons": ["payTo_changed:9d:signed_by_old_key"] },
+  "riskTags": ["上游未披露"],
+  "risk":   { "score": 18, "reasons": ["payment:unverified_recipient_or_instruction"] },
   "credit": { "score": null, "confidence": "low", "independent_payers": 0, "reasons": ["new_insufficient_data"] },
-  "reasons": ["source:crawled:bazaar", "signature:unsigned", "payment:owner_confirmation_required"]
+  "reasons": ["identity:unverified_ownership", "payment:owner_confirmation_required"]
 }
 ```
 
-`score` on the result itself is **relevance only** (ARD requirement). Reasons are machine-readable codes; clients render them from fixed templates (`packages/protocol/src/reasons.ts`) and never echo provider text.
+`score` on the result itself is **relevance only** (ARD requirement). Public reasons are broad, stable enums such as `identity:hosted_namespace`, `content:hidden_characters`, `capability:definition_changed`, and `metadata:invalid_description`, not raw rule names, weights or named review records. Risk labels come from a fixed allowlist; unknown extensions are omitted. The index projection is not the original signed card or a payment authorization. Reasons are machine-readable codes; clients render them from fixed templates (`packages/protocol/src/reasons.ts`) and never echo provider text. Legacy template aliases may render old responses; an unknown reason must produce a generic verification notice, never its raw text.
 
 ## 6. Client checks before paying
 
