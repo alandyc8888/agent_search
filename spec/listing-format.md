@@ -37,7 +37,7 @@ A listing is a standard [ARD](https://github.com/ards-project/ard-spec) entry pl
 | `a2n:interaction` | yes | `endpoint` (callable now), `inbox` (needs the owner to handle it), or both |
 | `a2n:address` | yes | An array of address objects: `[{kind:"direct", url, protocol:"openai"\|"a2a"\|"mcp"\|"http"}]` and/or `[{kind:"relay"}]`. The index supplies relay routes. This draft field does not provision a connection or decide the current connector's forwarding target |
 | `a2n:offerings` | yes | §3.2 |
-| `a2n:paymentMethods` | yes | §3.3 |
+| `a2n:paymentMethods` | yes | §3.3. An empty array is allowed for a declared-free service in this no-payment preview; its offering price is a provider-declared `"0"`, not a verified quote or payment authorization |
 | `a2n:probe` | no | A free probe/trial endpoint `{url, limits}` so anyone can test before paying |
 | `a2n:declarations` | no | Self-declared: `operator{name,country}`, `upstream{kind,hardware,runtime,region}`, `models[]`, `contentPolicy{summary,url}`, `dataPolicy{retention,training,region,url}` |
 | `a2n:sameOwnerAs` | no | Other identifiers or domains of the same owner. Confirmed only when both DID documents list each other in `alsoKnownAs` |
@@ -89,6 +89,14 @@ Offerings that handle user files or data (`doc.*`, `file.*`, editing/transcripti
 
 ### 3.3 Payment methods `a2n:paymentMethods[]`
 
+For a declared-free service in the no-payment preview, use an empty payment-method list and empty offering `accepts`, with price amount `"0"`. This is provider-declared metadata, not a verified quote, a debit authorization, or an implemented registration workflow. For example, this fragment describes only the payment fields:
+
+```json
+{"a2n:paymentMethods":[],"a2n:offerings":[{"id":"synthetic-task","price":{"mode":"fixed","amount":"0","currency":"USD","unit":"job"},"accepts":[]}]}
+```
+
+The payment behaviours below are design goals, not enabled by the current preview. Stop on HTTP 402; do not pay automatically.
+
 | `kind` | Fields | Client behaviour |
 | --- | --- | --- |
 | `x402` | `id`, `version`, `scheme`, `network` (CAIP-2), `asset` (contract), `payTo`, `maxTimeoutSeconds` | May auto-pay within the owner's limits and the client allowlist |
@@ -102,7 +110,7 @@ Offerings that handle user files or data (`doc.*`, `file.*`, editing/transcripti
 
 ## 4. Signatures (`trustManifest`)
 
-Only existing standards are combined.
+Only existing standards are combined. The DID descriptions below are proposed metadata, not a deployed provisioning service. The first self-service version is planned **not** to publish hosted DID documents. The current connector checks operator-pinned keys, not DID ownership; a signature proves possession of a key, not a domain, brand or certification. The registration workflow and its exact identity mapping are not implemented by this public preview.
 
 - **Identity:** `did:web`. With a domain: `did:web:<domain>`, DID document at `https://<domain>/.well-known/did.json`. Hosted handle: `did:web:net.example:u:<handle>`. A hosted handle proves "same key", not trustworthiness.
 - **Keys in the DID document:** `#listing` (Ed25519, signs the listing), `#receipt` (signs receipts, separate from `payTo`), `#e2e` (X25519). The current relay preview already uses the provider's X25519 key to seal queued requests for the connector; the matching local `xPrivateKey` is required to open them. This key name does not imply end-to-end encryption: the relay can read requests and results while processing. Results use a separate per-request pickup-derived key. The current connector uses its local identity file and operator-pinned public keys; it does not automatically resolve DID `#e2e`.

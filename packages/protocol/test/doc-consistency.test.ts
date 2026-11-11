@@ -41,6 +41,18 @@ describe('listing documentation consistency',()=>{
   expect(JSON.parse(read('policy/seeds.json')).$comment).toContain('does not implement a log client');
   expect(JSON.parse(read('packages/protocol/package.json')).description).toContain('No transparency-log proof verifier');
  });
+ it('allows a declared-free payment fragment without claiming implemented payment or DID provisioning',()=>{
+  const spec=read('spec/listing-format.md');
+  const block=spec.match(/```json\n(\{"a2n:paymentMethods":\[\][^\n]+\})\n```/);
+  expect(block).not.toBeNull();
+  const fragment=JSON.parse(block![1]);
+  expect(fragment['a2n:paymentMethods']).toEqual([]);
+  expect(fragment['a2n:offerings'][0].accepts).toEqual([]);
+  expect(fragment['a2n:offerings'][0].price).toEqual({mode:'fixed',amount:'0',currency:'USD',unit:'job'});
+  expect(spec).toContain('not a verified quote');
+  expect(spec).toContain('not** to publish hosted DID documents');
+  expect(spec).toContain('not a domain, brand or certification');
+ });
  it('keeps draft addresses as arrays and relay entries free of an undeclared protocol',()=>{
   expect(read('spec/listing-format.md')).toContain('An array of address objects');
   for(const entry of JSON.parse(read('spec/examples/ard.example.json')).entries){
