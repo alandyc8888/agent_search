@@ -3,7 +3,7 @@
   "@context": [
     "https://agenticresourcediscovery.org/context/v1",
     {
-      "a2n": "https://net.example/ns/v0#"
+      "a2n": "https://net.example/ns/a2n#"
     }
   ],
   "entries": [

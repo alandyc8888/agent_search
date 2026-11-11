@@ -4,9 +4,11 @@
 // @hpke/core before tier 2). No new primitives.
 //
 // Two uses:
-//  - inbox message → sealed to the provider's published X25519 key (relay cannot read it at rest)
-//  - result → sealed to a per-request key derived from the pickup token, which only the
-//    consumer holds. The relay stores only sha256(token) and the derived public key.
+//  - inbox message → sealed to the provider's published X25519 key for storage and connector delivery
+//  - result → sealed to a separate per-request key derived from the pickup token; the
+//    stored row keeps sha256(token) and the derived public key, not the raw pickup token.
+// This is storage sealing, not E2EE: the relay processes plaintext and sees the pickup
+// token on authorized retrieval. It does not protect against a malicious relay.
 import { x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";

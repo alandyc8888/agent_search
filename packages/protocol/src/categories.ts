@@ -1,4 +1,4 @@
-// Task categories (provider-listing-spec 3.2.0, controlled list v0.2) and a rule-based
+// Task categories (spec/listing-format.md v0.1, §3.2.1; controlled list v0.2) and a rule-based
 // classifier for crawled items. Rules only: no LLM reads untrusted text.
 
 export const CATEGORIES = [

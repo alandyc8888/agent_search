@@ -1,4 +1,4 @@
-// ARD v0.91 entry model + our a2n: namespace (provider-listing-spec v0.7).
+// ARD v0.91 entry model + our a2n: namespace (spec/listing-format.md v0.1).
 // Only the subset the index needs in M0.1. Provider-signed fields and index-computed
 // fields are kept apart: index fields only ever appear under "a2n:index" in results.
 

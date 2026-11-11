@@ -1,7 +1,7 @@
 # Provider listing format v0.1 (ARD entry + `a2n:` extension)
 
 Status: draft. The `a2n:` prefix and the `net.example` domain are placeholders until the network name is decided.
-Example: [examples/ard.example.json](examples/ard.example.json). The example is a design illustration, not the current preview's limits: the local preview accepts at most a 1 MiB JSON request body and 512 KiB binary input; its ZIP pack accepts at most 20 files. An illustrative `maxFileMB: 50` does not raise those caps or enable large-file transport.
+Example: [examples/ard.example.json](examples/ard.example.json). This is a design illustration, not a transport guarantee. The ZIP example, not the network as a whole, limits its JSON/base64 HTTP body to 1 MiB, cumulative binary input to 512 KiB, and files to pack to 20. The connector has separate configurable HTTP request/response body caps (default 1 MiB) and a transport deadline (default 15 seconds). Relay/reverse-proxy limits apply separately to their own envelopes, including base64/JSON overhead, and must be confirmed with the operator. The effective end-to-end allowance is the tightest applicable budget, not a promised 1 MiB file transfer. The illustrative `maxFileMB: 50` does not raise any implemented limit or enable large-file transport.
 
 A listing is a standard [ARD](https://github.com/ards-project/ard-spec) entry plus terms in our own JSON-LD namespace. ARD lets an entry carry extra namespaces: registries that don't understand them keep them as-is, and registries that do can filter on them. Publish once, readable everywhere. We do not invent a protocol.
 
@@ -103,7 +103,7 @@ Offerings that handle user files or data (`doc.*`, `file.*`, editing/transcripti
 Only existing standards are combined.
 
 - **Identity:** `did:web`. With a domain: `did:web:<domain>`, DID document at `https://<domain>/.well-known/did.json`. Hosted handle: `did:web:net.example:u:<handle>`. A hosted handle proves "same key", not trustworthiness.
-- **Keys in the DID document:** `#listing` (Ed25519, signs the listing), `#receipt` (signs receipts, separate from `payTo`), `#e2e` (X25519, reserved for a future end-to-end encrypted relay path; the current skill-only preview is not end-to-end encrypted).
+- **Keys in the DID document:** `#listing` (Ed25519, signs the listing), `#receipt` (signs receipts, separate from `payTo`), `#e2e` (X25519). The current relay preview already uses the provider's X25519 key to seal queued requests for the connector; the matching local `xPrivateKey` is required to open them. This key name does not imply end-to-end encryption: the relay can read requests and results while processing. Results use a separate per-request pickup-derived key. The current connector uses its local identity file and operator-pinned public keys; it does not automatically resolve DID `#e2e`.
 - **Signing:**
   1. Remove `trustManifest.signature`, canonicalise the entry with RFC 8785 (JCS).
   2. Sign with the `#listing` key as a detached JWS, `alg: EdDSA`, `kid` = DID URL.
