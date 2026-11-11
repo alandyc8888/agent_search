@@ -8,3 +8,6 @@ export * from "./reasons.ts";
 export * from "./seal.ts";
 export * from "./x25519-private.ts";
 export * from "./hpke-x25519.ts";
+export { parseProofJson } from "./strict-json.ts";
+export { encodeProviderDidKey, decodeProviderDidKey, encodePublicRegistrationChallenge, answerRegistrationChallenge } from "./provider-proof.ts";
+export type { AnswerRegistrationOptions } from "./provider-proof.ts";
