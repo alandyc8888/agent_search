@@ -13,6 +13,7 @@ import { x25519 } from "@noble/curves/ed25519.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
+import { normalizeX25519Private } from "./x25519-private.ts";
 
 const enc = new TextEncoder();
 const b64u = (b: Uint8Array) => Buffer.from(b).toString("base64url");
@@ -26,8 +27,11 @@ export interface Sealed {
 }
 
 export function x25519KeyPair(): { privateKey: Uint8Array; publicKey: Uint8Array } {
-  const privateKey = x25519.utils.randomSecretKey();
-  return { privateKey, publicKey: x25519.getPublicKey(privateKey) };
+  const raw = x25519.utils.randomSecretKey();
+  try {
+    const privateKey = normalizeX25519Private(raw);
+    return { privateKey, publicKey: x25519.getPublicKey(privateKey) };
+  } finally { raw.fill(0); }
 }
 
 function aeadKey(shared: Uint8Array, epk: Uint8Array, rpk: Uint8Array, info: string): Uint8Array {
@@ -47,15 +51,18 @@ export function seal(recipientPub: Uint8Array, plaintext: Uint8Array, info = "a2
 
 export function open(recipientPriv: Uint8Array, box: Sealed, info = "a2n-seal-v1"): Uint8Array {
   if (!box || box.v !== 1) throw new Error("bad_box");
-  const epk = unb64u(box.epk);
-  const rpk = x25519.getPublicKey(recipientPriv);
-  const shared = x25519.getSharedSecret(recipientPriv, epk);
-  const key = aeadKey(shared, epk, rpk, info);
-  const raw = unb64u(box.ct);
-  if (raw.length < 16) throw new Error("bad_box");
-  const d = createDecipheriv("aes-256-gcm", key, unb64u(box.iv));
-  d.setAuthTag(raw.subarray(raw.length - 16));
-  return new Uint8Array(Buffer.concat([d.update(raw.subarray(0, raw.length - 16)), d.final()]));
+  const owned = normalizeX25519Private(recipientPriv);
+  try {
+    const epk = unb64u(box.epk);
+    const rpk = x25519.getPublicKey(owned);
+    const shared = x25519.getSharedSecret(owned, epk);
+    const key = aeadKey(shared, epk, rpk, info);
+    const raw = unb64u(box.ct);
+    if (raw.length < 16) throw new Error("bad_box");
+    const d = createDecipheriv("aes-256-gcm", key, unb64u(box.iv));
+    d.setAuthTag(raw.subarray(raw.length - 16));
+    return new Uint8Array(Buffer.concat([d.update(raw.subarray(0, raw.length - 16)), d.final()]));
+  } finally { owned.fill(0); }
 }
 
 export const sealJson = (pub: Uint8Array, v: unknown, info?: string) => seal(pub, enc.encode(JSON.stringify(v)), info);
@@ -73,8 +80,11 @@ export function pickupTokenHash(token: string): string {
 }
 /** Per-request X25519 key pair derived from the token (independent of the stored hash). */
 export function pickupKeyPair(token: string): { privateKey: Uint8Array; publicKey: Uint8Array } {
-  const privateKey = hkdf(sha256, enc.encode(token), new Uint8Array(0), enc.encode("a2n-pickup-x25519-v1"), 32);
-  return { privateKey, publicKey: x25519.getPublicKey(privateKey) };
+  const raw = hkdf(sha256, enc.encode(token), new Uint8Array(0), enc.encode("a2n-pickup-x25519-v1"), 32);
+  try {
+    const privateKey = normalizeX25519Private(raw);
+    return { privateKey, publicKey: x25519.getPublicKey(privateKey) };
+  } finally { raw.fill(0); }
 }
 export function hashEquals(aHex: string, bHex: string): boolean {
   const a = Buffer.from(aHex, "hex");

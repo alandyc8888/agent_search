@@ -6,3 +6,5 @@ export * from "./ard.ts";
 export * from "./categories.ts";
 export * from "./reasons.ts";
 export * from "./seal.ts";
+export * from "./x25519-private.ts";
+export * from "./hpke-x25519.ts";

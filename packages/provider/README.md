@@ -84,6 +84,10 @@ node packages/provider/src/provider.ts /path/to/local/provider-config.json
 
 The configuration and both secret files must be regular files owned by the process user with permissions `0600`. Do not commit them. Runtime examples below contain paths and placeholders only, not working credentials.
 
+Identity loading is read-only: a single-link file (no symlink), at most 16 KiB, is opened with no-follow and checked against its original inode. An existing non-canonical X25519 scalar is normalized only in a private memory copy; the identity file is not rewritten, repaired or migrated. `xPrivateKey` must be canonical unpadded base64url encoding of exactly 32 bytes. An optional `xPub` must use that encoding and match the imported key; a present null, empty or invalid field is rejected, not ignored. Ed25519 material is separate and is never clamped.
+
+Programmatic callers must use `await startProvider(config, onEvent)` to obtain the controller. Identity validation finishes before any WebSocket connection is opened; rejection does not start a connector. The command-line invocation above performs that await automatically. Stopping clears the connector-owned X25519 byte copy on a best-effort basis, not a claim of physical secret erasure.
+
 ```json
 {
   "handle": "zip-demo",

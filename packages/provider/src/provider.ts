@@ -3,6 +3,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import { WebSocket } from 'ws';
 import { signDetached, fromBase64Url, openJson, type Sealed } from '@a2n/protocol';
+import { loadProviderIdentity } from './identity.ts';
 
 export interface ProviderConfig {
   handle:string; relay:string;
@@ -42,7 +43,7 @@ export async function forward(c:ProviderConfig,call:Call,signal?:AbortSignal):Pr
   signal?.throwIfAborted();
   const upstream=prepareUpstream(c);
   const p=validatePath(call.path);
-  // Query parameters are not accepted unless an exact route was explicitly configured (bootstrap: none).
+  // Routes are exact and prepareUpstream rejects query strings, even in explicitly configured routes.
   if(!c.routes.some(([m,path])=>m===call.method&&path===p))throw Error('route_not_allowed');
   const body=Buffer.from(call.bodyBase64,'base64');
   const max=c.maxBytes??1024*1024;
@@ -63,11 +64,11 @@ export async function forward(c:ProviderConfig,call:Call,signal?:AbortSignal):Pr
     req.on('close',()=>clearTimeout(timer));req.on('error',reject);req.end(body);
   });
 }
-export function startProvider(c:ProviderConfig,onEvent:(event:string)=>void=()=>{}){
+export async function startProvider(c:ProviderConfig,onEvent:(event:string)=>void=()=>{}){
   prepareUpstream(c);
   const relay=new URL(c.relay);
   if(relay.protocol!=='wss:'&&!(relay.protocol==='ws:'&&relay.hostname==='127.0.0.1'))throw Error('relay_requires_wss');
-  const key=JSON.parse(readSecret(c.identityFile)) as {privateKey:string;xPrivateKey:string};
+  const key=await loadProviderIdentity(c.identityFile);
   type Session={socket:WebSocket;closed:boolean;authenticated:boolean;ready:boolean;busy:boolean;heartbeat?:NodeJS.Timeout;inFlight?:AbortController};
   let active:Session|undefined;let retry:NodeJS.Timeout|undefined;let stopped=false;
   // Fail closed on replay of a call ID for this process lifetime. This is not durable exactly-once
@@ -108,7 +109,7 @@ export function startProvider(c:ProviderConfig,onEvent:(event:string)=>void=()=>
           s.busy=true;
           const task=new AbortController();s.inFlight=task;
           try{
-            const payload=openJson<any>(fromBase64Url(key.xPrivateKey),b.box as Sealed,'a2n-inbox:'+b.id);
+            const payload=openJson<any>(key.xPrivateKey,b.box as Sealed,'a2n-inbox:'+b.id);
             let result:CallResult;
             if(b.kind==='message'){
               // Fixed demo acknowledgement; this path does not execute message instructions.
@@ -138,17 +139,18 @@ export function startProvider(c:ProviderConfig,onEvent:(event:string)=>void=()=>
       if(!stopped)retry=setTimeout(()=>{retry=undefined;connect();},1000);
     });
   }
-  connect();
+  try { connect(); } catch { key.xPrivateKey.fill(0); throw Error('provider_connection_failed'); }
   return {stop:async()=>{
     stopped=true;
     if(retry){clearTimeout(retry);retry=undefined;}
     const s=active;active=undefined;
-    if(s){retire(s);s.socket.terminate();}
+    try { if(s){retire(s);s.socket.terminate();} }
+    finally { key.xPrivateKey.fill(0); }
   }};
 }
 if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
   const configPath=process.argv[2];if(!configPath)throw Error('usage: provider.ts CONFIG');
   const c=JSON.parse(readSecret(configPath)) as ProviderConfig;
-  const p=startProvider(c,e=>console.error('provider:'+e));
+  const p=await startProvider(c,e=>console.error('provider:'+e));
   for(const sig of ['SIGINT','SIGTERM'] as const)process.on(sig,()=>{void p.stop().then(()=>process.exit());});
 }

@@ -42,7 +42,7 @@ async function fixture(){
     socket.send(JSON.stringify({type:'challenge',challenge:crypto.randomUUID()}));
   });
   const events:string[]=[];
-  const provider=startProvider({handle:'test',relay:`ws://127.0.0.1:${(wss.address() as any).port}`,identityFile,upstream:`http://127.0.0.1:${(upstream.address() as any).port}`,routes:[['POST','/work']],heartbeatMs:50,timeoutMs:10000},e=>events.push(e));
+  const provider=await startProvider({handle:'test',relay:`ws://127.0.0.1:${(wss.address() as any).port}`,identityFile,upstream:`http://127.0.0.1:${(upstream.address() as any).port}`,routes:[['POST','/work']],heartbeatMs:50,timeoutMs:10000},e=>events.push(e));
   await until(()=>events.filter(e=>e==='ready').length===1);
   function send(peer:number,id:string,label:string){peers[peer].socket.send(JSON.stringify({type:'request',id,kind:'call',box:sealJson(x.publicKey,{method:'POST',path:'/work',bodyBase64:Buffer.from(label).toString('base64')},'a2n-inbox:'+id)}));}
   function sendMessage(id:string,message:string){peers[0].socket.send(JSON.stringify({type:'request',id,kind:'message',box:sealJson(x.publicKey,{message},'a2n-inbox:'+id)}));}
