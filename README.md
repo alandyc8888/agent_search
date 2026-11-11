@@ -15,8 +15,9 @@ With an operator-provided index/relay and a preconfigured demo provider:
 1. Search the demo index for a service such as ZIP packing.
 2. Send a synthetic request through the relay and save the result without
    opening or executing it.
-3. Leave a text inquiry while the provider is offline, retrieve its fixed
-   acknowledgement after it reconnects, then delete the stored request/result.
+3. Leave a text inquiry while the provider is offline, retrieve a fixed reply
+   plus the echoed untrusted inquiry after it reconnects, then delete the stored
+   request/result.
 
 An offline inquiry is not a queued file-processing job. The ZIP demo packs
 files into an archive; its pack operation does not compress them to save space.

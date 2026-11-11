@@ -3,6 +3,8 @@
 Status: draft. The `a2n:` prefix and the `net.example` domain are placeholders until the network name is decided.
 Example: [examples/ard.example.json](examples/ard.example.json). This is a design illustration, not a transport guarantee. The ZIP example, not the network as a whole, limits its JSON/base64 HTTP body to 1 MiB, cumulative binary input to 512 KiB, and files to pack to 20. The connector has separate configurable HTTP request/response body caps (default 1 MiB) and a transport deadline (default 15 seconds). Relay/reverse-proxy limits apply separately to their own envelopes, including base64/JSON overhead, and must be confirmed with the operator. The effective end-to-end allowance is the tightest applicable budget, not a promised 1 MiB file transfer. The illustrative `maxFileMB: 50` does not raise any implemented limit or enable large-file transport.
 
+The direct public URL, query-bearing endpoints and large-file values in the fictitious listings illustrate proposed metadata, not supported calls in this preview. The shipped connector uses an operator-provisioned relay and a fixed loopback upstream; it does not select a target from `a2n:address`. Do not open an inbound port or follow a listing URL to make this example work.
+
 A listing is a standard [ARD](https://github.com/ards-project/ard-spec) entry plus terms in our own JSON-LD namespace. ARD lets an entry carry extra namespaces: registries that don't understand them keep them as-is, and registries that do can filter on them. Publish once, readable everywhere. We do not invent a protocol.
 
 ## 1. Principles
@@ -33,7 +35,7 @@ A listing is a standard [ARD](https://github.com/ards-project/ard-spec) entry pl
 | --- | --- | --- |
 | `a2n:specVersion` | yes | `"0.1"` |
 | `a2n:interaction` | yes | `endpoint` (callable now), `inbox` (needs the owner to handle it), or both |
-| `a2n:address` | yes | `{kind:"direct", url, protocol:"openai"\|"a2a"\|"mcp"\|"http"}` or `{kind:"relay"}`. The relay route is filled in by the index |
+| `a2n:address` | yes | An array of address objects: `[{kind:"direct", url, protocol:"openai"\|"a2a"\|"mcp"\|"http"}]` and/or `[{kind:"relay"}]`. The index supplies relay routes. This draft field does not provision a connection or decide the current connector's forwarding target |
 | `a2n:offerings` | yes | §3.2 |
 | `a2n:paymentMethods` | yes | §3.3 |
 | `a2n:probe` | no | A free probe/trial endpoint `{url, limits}` so anyone can test before paying |

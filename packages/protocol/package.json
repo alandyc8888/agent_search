@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Listing format, signatures, sealed boxes, x402 parsing, asset allowlist and transparency-log verification shared by the plugin and the index.",
+  "description": "ARD listing helpers, detached signatures, experimental sealed boxes, x402 parsing, asset allowlist and public reason-code rendering shared by preview components. No transparency-log proof verifier or payment authorizer is included.",
   "exports": {
     ".": "./src/index.ts"
   },

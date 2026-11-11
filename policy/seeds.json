@@ -1,5 +1,5 @@
 {
-  "$comment": "Public list of trust seeds for the credit graph. Seeds are starting points for the payer-trust walk only; they get no ranking boost. Revoke by setting revokedAt; every add, revoke or suspension is written to the transparency log. payTo is listed for every chain a seed uses. Only Base mainnet USDC is on the client payment allowlist; addresses on other chains are recorded so payTo checks do not misfire, but they are not payable. A live 402 whose payTo is not listed here suspends the seed until re-reviewed. Solana addresses are case-sensitive base58.",
+  "$comment": "Public list of trust seeds for the credit graph. Seeds are starting points for the payer-trust walk only; they get no ranking boost. Revoke by setting revokedAt. The design calls for recording seed additions, revocations and suspensions in a transparency log; this public preview does not implement a log client, verify log proofs, or enforce that recording. This JSON configuration alone is not proof that a change was logged. payTo is listed for every chain a seed uses. Only Base mainnet USDC is on the client payment allowlist; addresses on other chains are recorded so payTo checks do not misfire, but they are not payable. A live 402 whose payTo is not listed here suspends the seed until re-reviewed. Solana addresses are case-sensitive base58.",
   "version": 2,
   "seeds": [
     {

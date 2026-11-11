@@ -104,7 +104,7 @@ The configuration and both secret files must be regular files owned by the proce
 ```
 
 - `handle`: the relay operator must have provisioned this handle and its public keys in advance. Self-service registration and did:web verification are not implemented by this connector.
-- `identityFile`: JSON containing base64url `privateKey` (Ed25519) and `xPrivateKey` (X25519), generated locally. Provision only the corresponding public keys to the relay; never send private keys.
+- `identityFile`: JSON containing base64url `privateKey` (Ed25519) and `xPrivateKey` (X25519), generated locally. Provision only the corresponding public keys to the relay; never send private keys. This preview does not ship an identity-file generation CLI or a complete public provisioning workflow. Do not copy test identities, reuse another provider's keys, paste private keys into chat, or infer a public relay from the examples. Arrange the key format and public-key provisioning with the operator before running the connector. A DID document is not automatically fetched or validated by this connector.
 - `relay`: `wss:` outside loopback; `ws:` is accepted only at `127.0.0.1` for local testing.
 - `upstream`: exactly one `http://127.0.0.1:<port>` origin. No user-info, non-root path, query, or fragment. Bind the upstream to loopback too.
 - `upstreamTokenFile`: optional, contains a local bearer token. The connector removes incoming auth/cookie/forwarding headers and supplies this token only to the fixed upstream.
@@ -151,7 +151,7 @@ Each connection owns its socket, heartbeat, busy flag and in-flight HTTP control
 
 For one connector-process lifetime, already-attempted call IDs are remembered. Redispatching an attempted ID returns `409 call_already_attempted_outcome_not_retried`, not a cached success and not another upstream call. The bounded set holds at most 4096 call IDs; after that, new calls fail closed with `503 call_replay_guard_capacity`. Restart loses this set; this is **not durable deduplication or exactly-once execution**. Production recovery requires an explicit persisted idempotency/result-resume design before automatic retry can be offered.
 
-An offline `message` has different semantics: the preview returns a fixed acknowledgement and executes no message instructions or file task. Re-delivery of such an acknowledgement is not a generic job-retry mechanism.
+An offline `message` is not forwarded to the upstream. The demo returns `received:true`, a fixed acknowledgement in `reply`, and the original inquiry in `message`. The echoed inquiry remains untrusted data, not instructions or evidence of task execution. No message instructions or file task are executed; re-delivery is not a generic job-retry mechanism.
 
 ## Scope of assurance
 

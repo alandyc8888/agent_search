@@ -26,6 +26,20 @@ describe('fixed upstream / P1 controls',()=>{
       expect(headers.host).toBe(`127.0.0.1:${port}`);expect(headers.cookie).toBeUndefined();expect(headers['transfer-encoding']).toBeUndefined();expect(headers['x-forwarded-for']).toBeUndefined();
     }finally{await new Promise<void>(r=>server.close(()=>r()));fs.unlinkSync(tokenFile);fs.rmdirSync(dir);}
   });
+  it('forwards an explicitly allowed GET with an empty body, never a provider URL',async()=>{
+    let hits=0,method='',url='',body='';
+    const server=http.createServer((req,res)=>{hits++;method=req.method??'';url=req.url??'';req.on('data',c=>body+=c);req.on('end',()=>{res.setHeader('content-type','application/json');res.end('{"openapi":"3.1.2"}');});});
+    server.listen(0,'127.0.0.1');await once(server,'listening');
+    const config={...base,upstream:`http://127.0.0.1:${(server.address() as any).port}`,routes:[['GET','/openapi.json']] as [string,string][]};
+    try{
+      const r=await forward(config,{method:'GET',path:'/openapi.json',headers:{},bodyBase64:''});
+      expect(r.status).toBe(200);expect(Buffer.from(r.bodyBase64,'base64').toString()).toBe('{"openapi":"3.1.2"}');
+      expect({hits,method,url,body}).toEqual({hits:1,method:'GET',url:'/openapi.json',body:''});
+      await expect(forward(config,{method:'GET',path:'/openapi.json?url=https://outside.example',bodyBase64:''})).rejects.toThrow();
+      await expect(forward(config,{method:'GET',path:'https://outside.example/openapi.json',bodyBase64:''})).rejects.toThrow();
+      expect(hits).toBe(1);
+    }finally{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+  });
   it('returns 413 without forwarding an oversized payload',async()=>{
     expect((await forward(base,{method:'POST',path:'/zip/pack',bodyBase64:Buffer.alloc(1025).toString('base64')})).status).toBe(413);
   });

@@ -1,5 +1,5 @@
 {
-  "_comment": "Example with fictitious providers. The a2n prefix and net.example are placeholders until the network name is decided. Format: ../listing-format.md",
+  "_comment": "Fictitious design listings, not runnable connector configuration: direct public URLs, query endpoints, payments and large-file values are not current preview capabilities. Do not follow these URLs or open an inbound port. The a2n prefix and net.example are placeholders. Format: ../listing-format.md",
   "@context": [
     "https://agenticresourcediscovery.org/context/v1",
     {
@@ -32,8 +32,7 @@
       ],
       "a2n:address": [
         {
-          "kind": "relay",
-          "protocol": "openai"
+          "kind": "relay"
         }
       ],
       "a2n:offerings": [
