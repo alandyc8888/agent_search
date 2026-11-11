@@ -13,7 +13,7 @@ describe('fixed registration JSON boundary', () => {
   it.each([
     '', '\ufeff{}', '{"a":1,"a":2}', '{"a":1,"\\u0061":2}', '{"a":1,}', '[1,]',
     '{"x":"\\ud800"}', '{"x":"\\udc00"}', '"\n"', '"\\x41"', '"\\u123"',
-    '01', '+1', 'NaN', 'Infinity', '1e999', '9007199254740992', '1.1', '{} true', '{', '[', 'truefalse',
+    '01', '+1', 'NaN', 'Infinity', '1e999', '9007199254740992', '1.1', '1.0000000000000001', '1e-999', '1e0', '1.0', '{} true', '{', '[', 'truefalse',
   ])('rejects invalid syntax/encoding/value %#', text => { expect(() => parseProofJson(raw(text))).toThrow('proof_invalid'); });
   it('rejects bad UTF8 rather than inserting replacement characters', () => {
     for (const bytes of [[34, 0xc0, 0xaf, 34], [34, 0xed, 0xa0, 0x80, 34], [34, 0xff, 34], [0xef, 0xbb, 0xbf, 123, 125]]) {

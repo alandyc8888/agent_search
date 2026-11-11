@@ -82,7 +82,9 @@ function parse(raw: unknown, bytes: number, depthLimit: number, nodeLimit: numbe
       for (const [token, result] of [['true', true], ['false', false], ['null', null]] as const) {
         if (text.startsWith(token, at)) { at += token.length; return result; }
       }
-      const number = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/.exec(text.slice(at));
+      // This profile only uses integer tokens. Reject decimal/exponent forms before Number can
+      // round a fractional or underflowing input into a safe integer (e.g. 1.0000000000000001).
+      const number = /^-?(?:0|[1-9][0-9]*)/.exec(text.slice(at));
       if (!number) return proofInvalid();
       at += number[0].length;
       const result = Number(number[0]);
